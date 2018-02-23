@@ -1,5 +1,4 @@
 object task_1 {
-
   import org.apache.spark.SparkContext
   import org.apache.spark.SparkConf
   import org.apache.log4j.Logger
@@ -14,6 +13,7 @@ object task_1 {
     val conf = new SparkConf().setAppName("task_1").setMaster("local")
     val sc = new SparkContext(conf)
 
+    //Select file and split by spaces
     val distFile = sc.textFile("data.txt")
     val words = distFile.flatMap(_.split(" "))
 
