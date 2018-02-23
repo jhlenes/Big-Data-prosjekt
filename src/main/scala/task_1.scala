@@ -1,4 +1,5 @@
 object task_1 {
+
   import org.apache.spark.SparkContext
   import org.apache.spark.SparkConf
   import org.apache.log4j.Logger
@@ -13,12 +14,20 @@ object task_1 {
     val conf = new SparkConf().setAppName("task_1").setMaster("local")
     val sc = new SparkContext(conf)
 
-    //Select file and split by spaces
-    val distFile = sc.textFile("data.txt")
-    val words = distFile.flatMap(_.split(" "))
+    // load tweets
+    var geotweets = sc.textFile("data/geotweets.tsv")
+    geotweets = geotweets.sample(false, 0.0001, 5)
+    geotweets.saveAsTextFile(".\\testdata.txt")
 
-    val wordsThatStartWithS = words.filter(s => s.charAt(0) == 's')
-    wordsThatStartWithS.foreach(println)
+    // a) How many tweets are there?
+    val ones = geotweets.map(_ => 1)
+    val tweetCount = ones.reduce((a, b) => a + b)
+    printf("tweetCount: %d\n", tweetCount)
+
+    // b) How many distinct users (username) are there?
+    val users = geotweets.map(line => line.split("\t")(6))
+
+    users.foreach(println)
 
   }
 
