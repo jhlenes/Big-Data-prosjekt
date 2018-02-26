@@ -65,6 +65,27 @@ object task_1 {
     println(minimumLatitude)
 
 
+    // g) What is the minimum longitude?
+    val longitude = geotweets.map(line => line.split("\t")(12))
+    val minimumLongitude = longitude.min()
+    printf("Minimum longitude: ")
+    println(minimumLongitude)
+
+    // h) What is the maximum latitude?
+
+    val maxLatitude = latitude.max()
+    printf("Maximum latitude: ")
+    println(maxLatitude)
+
+    // i) What is the maximum longitude? NOTE: There'a mistake in the task description ("What != waht")
+    val maxLongitude = longitude.max()
+    printf("Maximum longitude: ")
+    println(maxLongitude)
+
+    // j) What is the average length of a tweet text in terms of characters?
+
+    val tweetText = geotweets.map(line => line.split("\t")(10))
+    
   }
 
 }
