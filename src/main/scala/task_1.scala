@@ -39,6 +39,32 @@ object task_1 {
 
     printf("Number of unique countries: %d\n", numOfUniqueCountries, "\n")
 
+    // d) How many distinct places (place_name) are there?
+
+    val places = geotweets.map(line => line.split("\t")(4))
+    val uniquePlaces = places.distinct()
+    val numOfUniquePlaces = uniquePlaces.count()
+
+    printf("Number of unique places: %d\n", numOfUniquePlaces, "\n")
+
+    //places.foreach(println)
+
+    // e) In how many languages users post tweets?
+
+    val languages = geotweets.map(line => line.split("\t")(5))
+    val uniqueLanguages = languages.distinct()
+    val numOfUniqueLanguages = uniqueLanguages.count()
+
+    printf("Number of unique languages: %d\n", numOfUniqueLanguages, "\n")
+
+    // f) What is the minimum latitude?
+    val latitude = geotweets.map(line => line.split("\t")(11))
+    val minimumLatitude = latitude.min()
+
+    printf("Minimum latitude: ")
+    println(minimumLatitude)
+
+
   }
 
 }
