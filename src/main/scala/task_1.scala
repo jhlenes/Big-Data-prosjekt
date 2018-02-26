@@ -22,16 +22,22 @@ object task_1 {
     // a) How many tweets are there?
     val ones = geotweets.map(_ => 1)
     val tweetCount = ones.reduce((a, b) => a + b)
-    printf("tweetCount: %d\n", tweetCount)
+    printf("tweetCount: %d\n", tweetCount, "\n")
 
     // b) How many distinct users (username) are there?
     val users = geotweets.map(line => line.split("\t")(6))
-    val uniqueUsers = geotweets.distinct()
+    val uniqueUsers = users.distinct()
     val numOfUniqueUsers = uniqueUsers.count()
 
-    printf("Number of unique users: %d\n", numOfUniqueUsers)
+    printf("Number of unique users: %d\n", numOfUniqueUsers, "\n")
 
     // c) How many distinct countries (country_name)?
+
+    val countries = geotweets.map(line => line.split("\t")(1))
+    val uniqueCountries = countries.distinct()
+    val numOfUniqueCountries = uniqueCountries.count()
+
+    printf("Number of unique countries: %d\n", numOfUniqueCountries, "\n")
 
   }
 
