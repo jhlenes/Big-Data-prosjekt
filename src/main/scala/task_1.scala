@@ -17,7 +17,7 @@ object task_1 {
     // load tweets
     var geotweets = sc.textFile("data/geotweets.tsv")
     geotweets = geotweets.sample(false, 0.0001, 5)
-    geotweets.saveAsTextFile(".\\testdata.txt")
+    //geotweets.saveAsTextFile(".\\testdata.txt")
 
     // a) How many tweets are there?
     val ones = geotweets.map(_ => 1)
@@ -26,8 +26,12 @@ object task_1 {
 
     // b) How many distinct users (username) are there?
     val users = geotweets.map(line => line.split("\t")(6))
+    val uniqueUsers = geotweets.distinct()
+    val numOfUniqueUsers = uniqueUsers.count()
 
-    users.foreach(println)
+    printf("Number of unique users: %d\n", numOfUniqueUsers)
+
+    // c) How many distinct countries (country_name)?
 
   }
 
