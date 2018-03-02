@@ -12,7 +12,7 @@ object task_5 {
     Logger.getLogger("akka").setLevel(Level.OFF)
 
     // initialize Spark
-    val conf = new SparkConf().setAppName("task_2").setMaster("local")
+    val conf = new SparkConf().setAppName("task_5").setMaster("local")
     val sc = new SparkContext(conf)
 
     // set result file

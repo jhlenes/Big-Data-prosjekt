@@ -16,8 +16,6 @@ object task_1 {
 
     // load tweets
     var geotweets = sc.textFile("data/geotweets.tsv")
-    //geotweets = geotweets.sample(false, 0.0001, 5)
-    //geotweets.saveAsTextFile(".\\testdata.txt")
 
     // a) How many tweets are there?
     val ones = geotweets.map(_ => 1)
