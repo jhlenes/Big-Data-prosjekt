@@ -1,11 +1,9 @@
-import java.nio.file.Files
+
 
 object task_2 {
 
-  import org.apache.spark.SparkContext
-  import org.apache.spark.SparkConf
-  import org.apache.log4j.Logger
-  import org.apache.log4j.Level
+  import org.apache.log4j.{Level, Logger}
+  import org.apache.spark.{SparkConf, SparkContext}
 
   def main(args: Array[String]): Unit = {
     // disable logging
@@ -17,8 +15,8 @@ object task_2 {
     val sc = new SparkContext(conf)
 
     // set result file
-    val resultFile = "result_2.txt"
-    val resultDirectory = resultFile.replace(".txt", "")
+    val resultFile = "result_2.tsv"
+    val resultDirectory = resultFile.replace(".tsv", "")
     ResultManager.deletePreviousResult(resultDirectory)
 
     /*
@@ -29,13 +27,14 @@ object task_2 {
      */
 
     // load tweets
-    var geotweets = sc.textFile("data/geotweets.tsv")
+    val geotweets = sc.textFile("data/geotweets.tsv")
 
-    val countryTweetTuple = geotweets.map(line => (line.split("\t")(1), 1)) // get the country name from the line
-      .reduceByKey((a, b) => a + b) // count the number of times the country appears
+    val res = geotweets.map(line => (line.split("\t")(1), 1)) // get the country name from the line
+      .reduceByKey(_ + _) // count the number of times the country appears
       .sortBy(tuple => (-tuple._2, tuple._1)) // sort by descending tweet count, then by ascending country name
+      .map(tuple => tuple._1 + "\t" + tuple._2) // convert tuple to .tsv format
 
-    countryTweetTuple.map(tuple => tuple._1 + "\t" + tuple._2).repartition(1).saveAsTextFile(resultDirectory) // save in .tsv format
+    res.coalesce(1).saveAsTextFile(resultDirectory)
     ResultManager.moveResult(resultDirectory)
   }
 

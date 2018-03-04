@@ -4,7 +4,7 @@ object task_7 {
   import org.apache.spark.{SparkConf, SparkContext}
 
   def main(args: Array[String]): Unit = {
-    val t0 = System.nanoTime()
+    val t0 = System.currentTimeMillis()
 
     // disable logging
     Logger.getLogger("org").setLevel(Level.OFF)
@@ -19,15 +19,20 @@ object task_7 {
     val resultDirectory = resultFile.replace(".tsv", "")
     ResultManager.deletePreviousResult(resultDirectory)
 
-    /* Task 7: Find the 5 cities in the US with the highest number of tweets (place_type = ’city’ and
-        country_code = ’US’, ordered by their tweet counts/alphabetical). For these 5 cities,
-        find the 10 most frequent words ordered by their frequency, ignoring the stop words
-        from the file and excluding words shorted than 2 characters (length < 2). Write a code
-        (named “task_7”) that writes the results in a TSV file named “result_7.tsv” in the
-        form of <place_name>tab<word1>tab<frequency1>tab<word2>tab<frequency2> ...
-        <word10>tab<frequency10>.*/
+    /*
+      Task 7: Find the 5 cities in the US with the highest number of tweets (place_type = ’city’ and
+      country_code = ’US’, ordered by their tweet counts/alphabetical). For these 5 cities,
+      find the 10 most frequent words ordered by their frequency, ignoring the stop words
+      from the file and excluding words shorted than 2 characters (length < 2). Write a code
+      (named “task_7”) that writes the results in a TSV file named “result_7.tsv” in the
+      form of <place_name>tab<word1>tab<frequency1>tab<word2>tab<frequency2> ...
+      <word10>tab<frequency10>.
+     */
 
-    def makeTuple(line: String): (String, String, String) = {
+    val geotweets = sc.textFile("data/geotweets.tsv")
+    val stopWords = sc.textFile("data/stop_words.txt").map((_, 1))
+
+    def makeTupleFromLine(line: String): (String, String, String) = {
       val splitted = line.split("\t")
       val countryCode = splitted(2)
       val placeType = splitted(3)
@@ -35,7 +40,7 @@ object task_7 {
       (countryCode, placeType, placeName)
     }
 
-    def makeTuple2(line: String): (String, String) = {
+    def makeTuple(line: String): (String, String) = {
       val splitted = line.split("\t")
       val placeName = splitted(4)
       val tweetText = splitted(10)
@@ -48,24 +53,14 @@ object task_7 {
       res.toString()
     }
 
-    var geotweets = sc.textFile("data/geotweets.tsv")
-    //geotweets = geotweets.sample(false, 0.01)
-    val stopWords = sc.textFile("data/stop_words.txt").map((_, 1))
-
-
-    val topFiveCities = geotweets.map(makeTuple)
+    val topFiveCities = geotweets.map(makeTupleFromLine)
       .filter({ case (countryCode, placeType, _) => countryCode == "US" && placeType == "city" }) // keep only US cities
       .map({ case (_, _, placeName) => (placeName, 1) })
-      .reduceByKey(_ + _)
+      .reduceByKey(_ + _) // count tweets per place
       .sortBy(tuple => (-tuple._2, tuple._1)) // descending count, alphabetical name
-      .map(tuple => tuple._1)
-      .collect().take(5)
+      .map(tuple => tuple._1).collect().take(5) // get the top five cities
 
-    val t2 = System.nanoTime()
-
-    println("Time used: " + (t2 - t0) + " ns")
-
-    val res = geotweets.map(makeTuple2)
+    val res = geotweets.map(makeTuple)
       .filter(tuple => topFiveCities.contains(tuple._1)) // keep only top five cities
       .flatMapValues(tweetText => tweetText.split(" ")) // get the words
       .filter({ case (_, word) => word.length >= 2 }) // remove short words
@@ -74,14 +69,12 @@ object task_7 {
       .map({ case ((place, word), count) => (place, (word, count)) }) // restructure KV pair
       .mapValues(List(_)).reduceByKey(_ ++ _) // combine (word, count) KV pairs in a list
       .mapValues(_.sortBy({ case (word, count) => (-count, word) }).take(10)) // take top 10 words
+      .sortBy({ case (city, _) => topFiveCities.indexOf(city) }) // sort places by total tweets
       .map(toTsv)
 
     res.coalesce(1).saveAsTextFile(resultDirectory) // save to file
     ResultManager.moveResult(resultDirectory) // move results to a .tsv file
 
-    val t1 = System.nanoTime()
-    println("Time used: " + (t1 - t0) + " ns")
-
+    println("Time: " + (System.currentTimeMillis() - t0))
   }
-
 }

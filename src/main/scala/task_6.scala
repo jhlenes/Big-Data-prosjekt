@@ -26,34 +26,31 @@ object task_6 {
       named “result_6.tsv” in the form of <word>tab<frequency>.
      */
 
-    def makeTuple(line: String): (String, String) = {
+    // load tweets and stop words
+    val geotweets = sc.textFile("data/geotweets.tsv")
+    val stopWords = sc.textFile("data/stop_words.txt")
+
+    def makeTupleFromLine(line: String): (String, String) = {
       val splitted = line.split("\t")
       val countryCode = splitted(2)
       val tweetText = splitted(10)
       (countryCode, tweetText)
     }
 
-    // load tweets
-    var geotweets = sc.textFile("data/geotweets.tsv")
-    //geotweets = sc.textFile("testdata.txt")
-    val stopWords = sc.textFile("data/stop_words.txt")
+    val NUM_WORDS_WANTED = 10
+    val MINIMUM_WORD_LENGTH = 2
 
-    val res = geotweets.map(makeTuple) // (country, tweetText)
+    val res = geotweets.map(makeTupleFromLine) // (country, tweetText)
       .filter({ case (countryCode, _) => countryCode == "US" }) // keep only tweets from US
       .flatMap({ case (_, tweetText) => tweetText.split(" ") }) // get all the words
-      .filter(_.length >= 2) // remove words with less than 2 characters
-      .map(_.toLowerCase)
-      .subtract(stopWords)
-      .map((_, 1))
-      .reduceByKey(_ + _)
-      .sortBy(tuple => -tuple._2)
-      .zipWithIndex
-      .filter { case (_, index) => index < 10 }
-      .keys
-      .map(tuple => tuple._1 + "\t" + tuple._2)
+      .filter(_.length >= MINIMUM_WORD_LENGTH) // remove words with less than 2 characters
+      .map(_.toLowerCase).subtract(stopWords) // remove stop words
+      .map((_, 1)).reduceByKey(_ + _) // count occurrences of each word
+      .sortBy(tuple => -tuple._2) // sort by tweet count in descending order
+      .zipWithIndex.filter({ case (_, index) => index < NUM_WORDS_WANTED }).keys // get the top ten words
+      .map(tuple => tuple._1 + "\t" + tuple._2) // to .tsv format
 
     res.coalesce(1).saveAsTextFile(resultDirectory) // save to file
     ResultManager.moveResult(resultDirectory) // move results to a .tsv file
   }
-
 }

@@ -1,9 +1,10 @@
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Paths}
+
 object task_1 {
 
-  import org.apache.spark.SparkContext
-  import org.apache.spark.SparkConf
-  import org.apache.log4j.Logger
-  import org.apache.log4j.Level
+  import org.apache.log4j.{Level, Logger}
+  import org.apache.spark.{SparkConf, SparkContext}
 
   def main(args: Array[String]): Unit = {
     // disable logging
@@ -14,89 +15,77 @@ object task_1 {
     val conf = new SparkConf().setAppName("task_1").setMaster("local")
     val sc = new SparkContext(conf)
 
+    val resultString = new StringBuilder()
+
     // load tweets
-    var geotweets = sc.textFile("data/geotweets.tsv")
+    val geotweets = sc.textFile("data/geotweets.tsv")
 
     // a) How many tweets are there?
-    val ones = geotweets.map(_ => 1)
-    val tweetCount = ones.reduce((a, b) => a + b)
-    printf("tweetCount: %d\n", tweetCount, "\n")
+    val tweetCount = geotweets.count()
+
+    resultString.append(tweetCount).append("\n")
 
     // b) How many distinct users (username) are there?
     val users = geotweets.map(line => line.split("\t")(6)) //Looking at the file, it seems that usernames are at 7, while user screen names are at 6.
-    val uniqueUsers = users.distinct()
-    val numOfUniqueUsers = uniqueUsers.count()
+    val uniqueUsersCount = users.distinct().count()
 
-    printf("Number of unique users: %d\n", numOfUniqueUsers, "\n")
+    resultString.append(uniqueUsersCount).append("\n")
 
     // c) How many distinct countries (country_name)?
-
     val countries = geotweets.map(line => line.split("\t")(1))
-    val uniqueCountries = countries.distinct()
-    val numOfUniqueCountries = uniqueCountries.count()
+    val uniqueCountriesCount = countries.distinct().count()
 
-    printf("Number of unique countries: %d\n", numOfUniqueCountries, "\n")
+    resultString.append(uniqueCountriesCount).append("\n")
 
     // d) How many distinct places (place_name) are there?
-
     val places = geotweets.map(line => line.split("\t")(4))
-    val uniquePlaces = places.distinct()
-    val numOfUniquePlaces = uniquePlaces.count()
+    val uniquePlacesCount = places.distinct().count()
 
-    printf("Number of unique places: %d\n", numOfUniquePlaces, "\n")
+    resultString.append(uniquePlacesCount).append("\n")
 
     // e) In how many languages users post tweets?
-
     val languages = geotweets.map(line => line.split("\t")(5))
-    val uniqueLanguages = languages.distinct()
-    val numOfUniqueLanguages = uniqueLanguages.count()
+    val uniqueLanguagesCount = languages.distinct().count()
 
-    printf("Number of unique languages: %d\n", numOfUniqueLanguages, "\n")
+    resultString.append(uniqueLanguagesCount).append("\n")
 
     // f) What is the minimum latitude?
     val latitude = geotweets.map(line => line.split("\t")(11).toDouble)
     val minimumLatitude = latitude.min()
 
-    printf("Minimum latitude: ")
-    println(minimumLatitude)
-
+    resultString.append(minimumLatitude).append("\n")
 
     // g) What is the minimum longitude?
     val longitude = geotweets.map(line => line.split("\t")(12).toDouble)
     val minimumLongitude = longitude.min()
-    printf("Minimum longitude: ")
-    println(minimumLongitude)
+
+    resultString.append(minimumLongitude).append("\n")
 
     // h) What is the maximum latitude?
-
     val maxLatitude = latitude.max()
-    printf("Maximum latitude: ")
-    println(maxLatitude)
+
+    resultString.append(maxLatitude).append("\n")
 
     // i) What is the maximum longitude? NOTE: There'a mistake in the task description ("What != waht")
     val maxLongitude = longitude.max()
-    printf("Maximum longitude: ")
-    println(maxLongitude)
+    resultString.append(maxLongitude).append("\n")
 
     // j) What is the average length of a tweet text in terms of characters?
-
     val tweetTextLength = geotweets.map(line => line.split("\t")(10).length.toLong)
-    var i = 0;
-    var totalChars = 0;
-    val totalCommentLength = tweetTextLength.reduce((a,b)=>(a + b))
-    val averageCommentLength = totalCommentLength/tweetCount
+    val totalTweetTextsLength = tweetTextLength.reduce((a, b) => a + b)
+    val averageTweetTextLength = totalTweetTextsLength / tweetCount
 
-    printf("Average length of tweet text: ")
-    println(averageCommentLength)
+    resultString.append(averageTweetTextLength).append("\n")
 
     // k) What is the average length of a tweet text in terms of words?
     val tweetTexts = geotweets.map(line => line.split("\t")(10))
-    val tweetWords = tweetTexts.flatMap(line => line.split(" ")) //Inclues stuff like "&amp;"
+    val tweetWords = tweetTexts.flatMap(line => line.split(" ")) //Includes stuff like "&amp;"
     val amountOfWords = tweetWords.count()
-    val averageWordCount = amountOfWords/tweetCount
+    val averageWordCount = amountOfWords / tweetCount
 
-    printf("Average words per tweet: ")
-    println(averageWordCount)
+    resultString.append(averageWordCount).append("\n")
+
+    // write the result to file
+    Files.write(Paths.get("result_1.tsv"), resultString.toString().getBytes(StandardCharsets.UTF_8))
   }
-
 }

@@ -21,18 +21,21 @@ object task_3 {
 
     /*
       Task 3: For each country that has more than 10 tweets, find its geographical centroid.
-        (a) Write a code (named “task_3”) that outputs in a TSV file the latitude and longitude
-        of the centroids and the names of the countries, in the form of <country_name>tab<latitude>tab<longitude>
-        (b) Visualize the results in CartoDB
-        (more information below)
+      (a) Write a code (named “task_3”) that outputs in a TSV file the latitude and longitude
+      of the centroids and the names of the countries, in the form of <country_name>tab<latitude>tab<longitude>
+      (b) Visualize the results in CartoDB
+      (more information below)
      */
 
     // load tweets
-    var geotweets = sc.textFile("data/geotweets.tsv")
+    val geotweets = sc.textFile("data/geotweets.tsv")
 
-    def makeTuple(line: String): (String, ((Double, Double), Int)) = {
+    def makeTupleFromLine(line: String): (String, ((Double, Double), Int)) = {
       val splitted = line.split("\t")
-      (splitted(1), ((splitted(11).toDouble, splitted(12).toDouble), 1))
+      val country = splitted(1)
+      val latitude = splitted(11).toDouble
+      val longitude = splitted(12).toDouble
+      (country, ((latitude, longitude), 1))
     }
 
     def reduceTuple(tuple1: ((Double, Double), Int), tuple2: ((Double, Double), Int)): ((Double, Double), Int) = {
@@ -48,11 +51,13 @@ object task_3 {
       (tuple._1, avgLat, avgLong)
     }
 
-    val res = geotweets.map(makeTuple) // (<country>, ((<lat>, <long>), 1))
-      .reduceByKey((tuple1, tuple2) => reduceTuple(tuple1, tuple2)) // (<country>, ((<latSum>, <longSum>), <tweetCount>))
-      .filter(tuple => tuple._2._2 > 10) // remove countries with less than 10 tweets
-      .map(tuple => calculateAverage(tuple)) // calculate average lat and long
-      .map(tuple => tuple._1 + "\t" + tuple._2 + "\t" + tuple._3)
+    val MINIMUM_TWEETS = 10
+
+    val res = geotweets.map(makeTupleFromLine) // (<country>, ((<lat>, <long>), 1))
+      .reduceByKey(reduceTuple) // (<country>, ((<latSum>, <longSum>), <tweetCount>))
+      .filter(tuple => tuple._2._2 > MINIMUM_TWEETS) // remove countries with less than the minimum required tweets
+      .map(calculateAverage) // calculate average lat and long
+      .map(tuple => "\"" + tuple._1 + "\"" + "\t" + tuple._2 + "\t" + tuple._3)
 
     res.coalesce(1).saveAsTextFile(resultDirectory)
     ResultManager.moveResult(resultDirectory)

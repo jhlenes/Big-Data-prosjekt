@@ -29,8 +29,7 @@ object task_4 {
      */
 
     // load tweets
-    var geotweets = sc.textFile("data/geotweets.tsv")
-    //geotweets = sc.textFile("testdata.txt")
+    val geotweets = sc.textFile("data/geotweets.tsv")
 
     // convert line to ((<country>, <hour>), <tweet_count>)
     def makeTupleFromLine(line: String): ((String, Int), Int) = {
@@ -39,13 +38,12 @@ object task_4 {
 
       val timezoneOffset = splitted(8).toLong * 1000L // in milliseconds
       val timeInMilliseconds = splitted(0).toLong
-      val localTime = new java.util.Date(timeInMilliseconds + timezoneOffset)
+      val localTime = new java.util.Date(timeInMilliseconds + timezoneOffset) // java.util.Date requires timestamp in milliseconds
 
       ((country, localTime.getHours), 1)
     }
 
-    val res = geotweets
-      .map(makeTupleFromLine) // convert line to ((<country>, <hour>), 1)
+    val res = geotweets.map(makeTupleFromLine) // convert line to ((<country>, <hour>), 1)
       .reduceByKey(_ + _) // sum the tweets for every key: (<country>, <hour>)
       .map({ case (((country, hour), tweetCount)) => (country, (hour, tweetCount)) }) // change the key to be only <country>
       .reduceByKey((tuple1, tuple2) => if (tuple1._2 > tuple2._2) tuple1 else tuple2) // get the hour with the most tweets
