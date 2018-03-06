@@ -50,7 +50,7 @@ object task_4 {
       .sortByKey() // sort by country
       .map({ case ((country, (hour, tweetCount))) => country + "\t" + hour + "\t" + tweetCount }) // convert tuple to .tsv string: <country_name>tab<begining_hour>tab<tweet_count>
 
-    res.coalesce(1).saveAsTextFile(resultDirectory) // save to file
+    res.coalesce(1).saveAsTextFile(resultDirectory)
     ResultManager.moveResult(resultDirectory) // move results to a .tsv file
   }
 

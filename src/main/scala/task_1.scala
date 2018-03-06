@@ -26,7 +26,7 @@ object task_1 {
     resultString.append(tweetCount).append("\n")
 
     // b) How many distinct users (username) are there?
-    val users = geotweets.map(line => line.split("\t")(6)) //Looking at the file, it seems that usernames are at 7, while user screen names are at 6.
+    val users = geotweets.map(line => line.split("\t")(6))
     val uniqueUsersCount = users.distinct().count()
 
     resultString.append(uniqueUsersCount).append("\n")
@@ -66,7 +66,7 @@ object task_1 {
 
     resultString.append(maxLatitude).append("\n")
 
-    // i) What is the maximum longitude? NOTE: There'a mistake in the task description ("What != waht")
+    // i) What is the maximum longitude?
     val maxLongitude = longitude.max()
     resultString.append(maxLongitude).append("\n")
 
@@ -79,13 +79,13 @@ object task_1 {
 
     // k) What is the average length of a tweet text in terms of words?
     val tweetTexts = geotweets.map(line => line.split("\t")(10))
-    val tweetWords = tweetTexts.flatMap(line => line.split(" ")) //Includes stuff like "&amp;"
+    val tweetWords = tweetTexts.flatMap(line => line.split(" "))
     val amountOfWords = tweetWords.count()
     val averageWordCount = amountOfWords / tweetCount
 
     resultString.append(averageWordCount).append("\n")
 
     // write the result to file
-    Files.write(Paths.get("result_1.tsv"), resultString.toString().getBytes(StandardCharsets.UTF_8))
+    Files.write(Paths.get("data/result_1.tsv"), resultString.toString().getBytes(StandardCharsets.UTF_8))
   }
 }
