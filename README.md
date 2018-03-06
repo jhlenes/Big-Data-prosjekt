@@ -18,4 +18,4 @@ To run the tasks, use the following command:
 where you replace `<task_num>` with the number of the task you want to run. `%SPARK_HOME%` is the location of your Spark installation.
 
 ### Seeing the result
-The result files will be created here: `Big-Data-prosjekt/task_<task_num>.tsv`, where `<task_num>` is the number of the task you ran.
+The result files will be created here: `Big-Data-prosjekt/data/results/task_<task_num>.tsv`, where `<task_num>` is the number of the task you ran.
