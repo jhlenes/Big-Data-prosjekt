@@ -48,11 +48,28 @@ object task_8 {
     tweetCount.show
 
     // (b) Number of distinct users (username)
+    val userCount = spark.sql("SELECT count(DISTINCT username) AS userCount FROM tweets")
+    userCount.show
+
     // (c) Number of distinct countries (country name)
-    // (d) Number of distinct places (place name)
+    val countryCount = spark.sql("SELECT count(DISTINCT country_code) AS countryCount FROM tweets")
+    countryCount.show
+
+    // (d) Number of distinct places (place name)'
+    val placeCount = spark.sql("SELECT count(DISTINCT place_name) AS placeCount FROM tweets")
+    placeCount.show
+
     // (e) Number of distinct languages users post tweets
+    val languageCount = spark.sql("SELECT count(DISTINCT language) AS languageCount FROM tweets")
+    languageCount.show
+
     // (f) Minimum values of latitude and longitude
+    val minLatLong = spark.sql("SELECT min(latitude) AS minLat, min(longitude) AS minLong FROM tweets")
+    minLatLong.show
+
     // (g) Maximum values of latitude and longitude
+    val maxLatLong = spark.sql("SELECT max(latitude) AS maxLat, max(longitude) AS maxLong FROM tweets")
+    maxLatLong.show
 
   }
 
