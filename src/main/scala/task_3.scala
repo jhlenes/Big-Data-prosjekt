@@ -57,7 +57,7 @@ object task_3 {
       .reduceByKey(reduceTuple) // (<country>, ((<latSum>, <longSum>), <tweetCount>))
       .filter(tuple => tuple._2._2 > MINIMUM_TWEETS) // remove countries with less than the minimum required tweets
       .map(calculateAverage) // calculate average lat and long
-      .map(tuple => "\"" + tuple._1 + "\"" + "\t" + tuple._2 + "\t" + tuple._3)
+      .map(tuple => tuple._1 + "\t" + tuple._2 + "\t" + tuple._3)
 
     res.coalesce(1).saveAsTextFile(resultDirectory)
     ResultManager.moveResult(resultDirectory)

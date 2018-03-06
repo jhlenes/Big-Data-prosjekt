@@ -52,7 +52,7 @@ object task_8 {
     userCount.show
 
     // (c) Number of distinct countries (country name)
-    val countryCount = spark.sql("SELECT count(DISTINCT country_code) AS countryCount FROM tweets")
+    val countryCount = spark.sql("SELECT count(DISTINCT country_name) AS countryCount FROM tweets")
     countryCount.show
 
     // (d) Number of distinct places (place name)'
