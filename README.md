@@ -1,7 +1,7 @@
 # TDT4305 Big Data Project
 
 ## Phase 1: Data Analysis with Spark
-This is a  project  of  the  course  TDT4305  –  Big  Data  Architecture and  consists  of  two  phases.   This  is the first phase, which focuses on learning how to perform data analysis on a large dataset with the Apache Spark framework. In this task we worked with a dataset of tweets. The Big Data analysis was related to exploring the tweet data, analyse the tweet times and to do textual analysis on the tweet texts.  The Spark API wasto be used whenever it was possible and suitable. The programming language which was used in the project is Scala.
+This is a  project  in  the  course  TDT4305  –  Big  Data  Architecture and  consists  of  two  phases.   This  is the first phase, which focuses on learning how to perform data analysis on a large dataset with the Apache Spark framework. In this task we worked with a dataset of tweets. The Big Data analysis was related to exploring the tweet data, analyse the tweet times and to do textual analysis on the tweet texts.  The Spark API wasto be used whenever it was possible and suitable. The programming language which was used in the project is Scala.
 
 ## Running the program
 First, make sure you are in the top directory (the folder this file is located in). If you clone directly from Github,
