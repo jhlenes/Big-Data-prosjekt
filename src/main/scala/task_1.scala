@@ -73,7 +73,7 @@ object task_1 {
     // j) What is the average length of a tweet text in terms of characters?
     val tweetTextLength = geotweets.map(line => line.split("\t")(10).length.toLong)
     val totalTweetTextsLength = tweetTextLength.reduce((a, b) => a + b)
-    val averageTweetTextLength = totalTweetTextsLength * 1.0 / tweetCount
+    val averageTweetTextLength = totalTweetTextsLength.toDouble / tweetCount
 
     resultString.append(averageTweetTextLength).append("\n")
 
@@ -81,11 +81,11 @@ object task_1 {
     val tweetTexts = geotweets.map(line => line.split("\t")(10))
     val tweetWords = tweetTexts.flatMap(line => line.split(" "))
     val amountOfWords = tweetWords.count()
-    val averageWordCount = amountOfWords * 1.0 / tweetCount
+    val averageWordCount = amountOfWords.toDouble / tweetCount
 
     resultString.append(averageWordCount).append("\n")
 
     // write the result to file
-    Files.write(Paths.get("data/result_1.tsv"), resultString.toString().getBytes(StandardCharsets.UTF_8))
+    Files.write(Paths.get("data/results/result_1.tsv"), resultString.toString().getBytes(StandardCharsets.UTF_8))
   }
 }
