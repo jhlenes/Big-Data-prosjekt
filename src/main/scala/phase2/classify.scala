@@ -58,14 +58,12 @@ object classify {
 
     // get each of the words from the input
     val inputWords = input.flatMap(_.toLowerCase.split(" "))
+    val inputWordsDistinctKVP = inputWords.distinct.map(word => (word, None)) // make a key value pair so we can join it with other pair RDDs
 
     // calculate necessary counts
     val inputWordCount = inputWords.count()
     val inputDistinctWordCount = inputWords.distinct().count()
-    val tweetCount = training.count()
-
-    // create tuples of the form: (place_name, tweet_count)
-    val tweetCountByPlace = training.map(line => (line.split("\t")(4), 1)).reduceByKey(_ + _)
+    val tweetCount = training.count() // |T|
 
     def extractRelevantFields(line: String): (String, String) = {
       val splitted = line.split("\t")
@@ -74,10 +72,21 @@ object classify {
       (placeName, tweetText)
     }
 
-    // create tuples of the form: (word, (place_name, word_frequency))
-    val placeWordCount = training.map(extractRelevantFields).flatMapValues(text => text.split(" ").distinct) // (place_name, word). We use distinct because we count how many tweets contain the word, not occurrences of the word
-      .map({ case (place, word) => ((place, word), 1) }).reduceByKey(_ + _)
-      .map({ case ((place, word), freq) => (word, (place, freq)) })
+    // create tuples of the form: (place_name, <product of word frequencies>)
+    val placeFreqProduct = training.map(extractRelevantFields).flatMapValues(text => text.split(" ").distinct) // get all words for all places
+      .map({ case (place, word) => (word, place) }).join(inputWordsDistinctKVP).mapValues(_._1) // remove words that are not in the input
+      .map({ case (word, place) => ((place, word), 1) }).reduceByKey(_ + _) // count the number of tweets each word occur in
+
+      // calculate the product of frequencies and check if a place contains all the words from the input
+      .map({ case ((place, word), freq) => (place, (freq, 1)) }).reduceByKey((a, b) => (a._1 * b._1, a._2 + b._2))
+      // we now have: (place, (<product of frequencies>, <number of words from 'place'>))
+      .filter(_._2._2 == inputDistinctWordCount) // filter out the places that don't have all the words
+      .mapValues(_._1) // keep only the product of the frequencies
+
+    // calculate |T_c| for all places
+    val tweetCountByPlace = training.map(line => (line.split("\t")(4), 1))
+      .join(placeFreqProduct).mapValues(_._1) // remove places that doesn't have all the words
+      .reduceByKey(_ + _)
 
     def getMaxProb(a: (String, Double), b: (String, Double)): (String, Double) = {
       if (a._2 > b._2) {
@@ -85,40 +94,17 @@ object classify {
       } else if (a._2 < b._2) {
         b
       } else {
-        // keep both place names
-        (a._1 + "\t" + b._1, a._2)
+        (a._1 + "\t" + b._1, a._2) // keep both place names
       }
     }
 
-    val probabilities = inputWords
-
-      // combine the input words with place names and their frequencies from that place
-      .map(word => (word, None))
-      .cogroup(placeWordCount)
-      .filter({ case (key, (a, b)) => a.nonEmpty && b.nonEmpty }) // keep only words that exist both in the input and in a place
-      .map({ case (key, (a, b)) => (key, b.toArray) })
-      .flatMapValues(identity(_)) // we now have: (word, (place, freq)) if they exist, else nothing
-
-      .map({ case (word, (place, freq)) => (place, (freq, 1)) }) // we don't need the word anymore, so we remove it
-      .reduceByKey((a, b) => (a._1 * b._1, a._2 + b._2)) // we now have: (place, (<product of frequencies>, <number of words from 'place'>))
-
-      .filter(_._2._2 == inputDistinctWordCount) // filter out the places that don't have all the words TODO: IS THIS WRONG?
-      .mapValues(_._1) // keep only the product of the frequencies. now: (place, <product of frequencies>)
-
-      // get the tweet count for each place
-      .cogroup(tweetCountByPlace).filter({ case (key, (a, b)) => a.nonEmpty && b.nonEmpty })
-      .map({ case (place, (freqProdIter, countIter)) => (place, freqProdIter.toArray.apply(0), countIter.toArray.apply(0)) })
-      // now: (place, <product of frequencies>, <tweet count from 'place'>)
-
-      // complete the calculation of bayes
-      .map({ case (place, freqProd, count) => (place, freqProd.toDouble / (tweetCount * Math.pow(count, inputWordCount - 1))) })
+    val probabilities = placeFreqProduct
+      .join(tweetCountByPlace) // now: (place, (<product of frequencies>, |T_c|))
+      .map({ case (place, (freqProd, count)) => (place, freqProd.toDouble / (tweetCount * Math.pow(count, inputWordCount - 1))) }) // complete the calculation of bayes
 
     var resultString = ""
     if (!probabilities.isEmpty()) {
-      val res = probabilities
-        .sortBy(-_._2) // sort by probability
-        .reduce(getMaxProb)
-
+      val res = probabilities.reduce(getMaxProb)
       resultString = res._1 + "\t" + res._2
     }
 
