@@ -1,11 +1,11 @@
+package phase1
+
 object task_7 {
 
   import org.apache.log4j.{Level, Logger}
   import org.apache.spark.{SparkConf, SparkContext}
 
   def main(args: Array[String]): Unit = {
-    val t0 = System.currentTimeMillis()
-
     // disable logging
     Logger.getLogger("org").setLevel(Level.OFF)
     Logger.getLogger("akka").setLevel(Level.OFF)
@@ -74,7 +74,5 @@ object task_7 {
 
     res.coalesce(1).saveAsTextFile(resultDirectory) // save to file
     ResultManager.moveResult(resultDirectory) // move results to a .tsv file
-
-    println("Time: " + (System.currentTimeMillis() - t0))
   }
 }

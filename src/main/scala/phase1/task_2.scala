@@ -1,3 +1,5 @@
+package phase1
+
 
 
 object task_2 {

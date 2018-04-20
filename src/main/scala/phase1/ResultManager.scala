@@ -1,10 +1,11 @@
+package phase1
+
 import java.nio.file.Files
 
 object ResultManager {
 
   def moveResult(resultDirectory: String): Unit = {
-    import java.nio.file.Paths
-    import java.nio.file.StandardCopyOption
+    import java.nio.file.{Paths, StandardCopyOption}
     Files.move(Paths.get(resultDirectory + "/part-00000"), Paths.get("data/results/" + resultDirectory + ".tsv"), StandardCopyOption.REPLACE_EXISTING)
     deletePreviousResult(resultDirectory)
   }

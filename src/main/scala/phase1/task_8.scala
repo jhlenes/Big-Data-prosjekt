@@ -1,11 +1,13 @@
+package phase1
+
 
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.{SparkConf, SparkContext}
 
 object task_8 {
 
-  import org.apache.spark.sql.{Row, SparkSession}
   import org.apache.spark.sql.types._
+  import org.apache.spark.sql.{Row, SparkSession}
 
   def createSparkSessionWithTweets(): SparkSession = {
     // disable logging
