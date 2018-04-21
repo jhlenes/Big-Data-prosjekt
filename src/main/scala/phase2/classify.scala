@@ -4,15 +4,14 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 
 import org.apache.log4j.{Level, Logger}
-import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 
 object classify {
 
   def main(args: Array[String]): Unit = {
-
+    val t0 = System.currentTimeMillis()
     // set defaults
-    var trainingPath = "data/geotweets.tsv"
+    var trainingPath = "data/phase2Test/example_training.tsv"
     var inputPath = "data/phase2Test/test_input.tsv"
     var outputPath = "data/phase2Test/test_output.tsv"
 
@@ -48,17 +47,17 @@ object classify {
     val conf = new SparkConf().setAppName("classify").setMaster("local")
     val sc = new SparkContext(conf)
 
-    val training = sc.textFile(trainingPath)
-    val input = sc.textFile(inputPath)
-
-    classify(sc, training, input, outputPath)
+    classify(sc, trainingPath, inputPath, outputPath)
+    println("Time: ", System.currentTimeMillis() - t0)
   }
 
-  def classify(sc: SparkContext, training: RDD[String], input: RDD[String], outputPath: String): Unit = {
+  def classify(sc: SparkContext, trainingPath: String, inputPath: String, outputPath: String): Unit = {
+    val training = sc.textFile(trainingPath).persist()
+    val input = sc.textFile(inputPath).persist()
 
     // get each of the words from the input
-    val inputWords = input.flatMap(_.toLowerCase.split(" "))
-    val inputWordsDistinctKVP = inputWords.distinct.map(word => (word, None)) // make a key value pair so we can join it with other pair RDDs
+    val inputWords = input.flatMap(_.toLowerCase.split(" ")).persist()
+    val inputWordsDistinctKVP = inputWords.map(word => (word, 1)).reduceByKey(_ + _) // make a key value pair so we can join it with other pair RDDs
 
     // calculate necessary counts
     val inputWordCount = inputWords.count()
@@ -74,14 +73,16 @@ object classify {
 
     // create tuples of the form: (place_name, <product of word frequencies>)
     val placeFreqProduct = training.map(extractRelevantFields).flatMapValues(text => text.split(" ").distinct) // get all words for all places
-      .map({ case (place, word) => (word, place) }).join(inputWordsDistinctKVP).mapValues(_._1) // remove words that are not in the input
-      .map({ case (word, place) => ((place, word), 1) }).reduceByKey(_ + _) // count the number of tweets each word occur in
+      .map({ case (place, word) => (word, place) }).join(inputWordsDistinctKVP) // remove words that are not in the input
+      .map({ case (word, (place, inputOccurrences)) => ((place, word, inputOccurrences), 1) }).reduceByKey(_ + _) // count the number of tweets each word occur in
+      .map({ case ((place, word, inputOccurrences), freq) => ((place, word), Math.pow(freq, inputOccurrences)) })
 
       // calculate the product of frequencies and check if a place contains all the words from the input
       .map({ case ((place, word), freq) => (place, (freq, 1)) }).reduceByKey((a, b) => (a._1 * b._1, a._2 + b._2))
       // we now have: (place, (<product of frequencies>, <number of words from 'place'>))
       .filter(_._2._2 == inputDistinctWordCount) // filter out the places that don't have all the words
       .mapValues(_._1) // keep only the product of the frequencies
+      .persist()
 
     // calculate |T_c| for all places
     val tweetCountByPlace = training.map(line => (line.split("\t")(4), 1))
@@ -101,6 +102,7 @@ object classify {
     val probabilities = placeFreqProduct
       .join(tweetCountByPlace) // now: (place, (<product of frequencies>, |T_c|))
       .map({ case (place, (freqProd, count)) => (place, freqProd.toDouble / (tweetCount * Math.pow(count, inputWordCount - 1))) }) // complete the calculation of bayes
+      .persist()
 
     var resultString = ""
     if (!probabilities.isEmpty()) {
