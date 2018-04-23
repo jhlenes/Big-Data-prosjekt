@@ -9,7 +9,6 @@ import org.apache.spark.{SparkConf, SparkContext}
 object classify {
 
   def main(args: Array[String]): Unit = {
-    val t0 = System.currentTimeMillis()
     // set defaults
     var trainingPath = "data/phase2Test/example_training.tsv"
     var inputPath = "data/phase2Test/test_input.tsv"
@@ -36,7 +35,8 @@ object classify {
       }
     } else {
       println("Usage:\n\t-training <full path of the training file>\n\t-input <full path of the input file>\n\t-output <full path of the output file>")
-      println("No arguments, using defaults.")
+      println("No arguments, stopping program.")
+      return
     }
 
     // disable logging
@@ -48,7 +48,6 @@ object classify {
     val sc = new SparkContext(conf)
 
     classify(sc, trainingPath, inputPath, outputPath)
-    println("Time: ", System.currentTimeMillis() - t0)
   }
 
   def classify(sc: SparkContext, trainingPath: String, inputPath: String, outputPath: String): Unit = {
@@ -64,7 +63,7 @@ object classify {
     val inputDistinctWordCount = inputWords.distinct().count()
     val tweetCount = training.count() // |T|
 
-    def extractRelevantFields(line: String): (String, String) = {
+    def extractPlaceAndTweettext(line: String): (String, String) = {
       val splitted = line.split("\t")
       val placeName = splitted(4)
       val tweetText = splitted(10).toLowerCase
@@ -72,7 +71,7 @@ object classify {
     }
 
     // create tuples of the form: (place_name, <product of word frequencies>)
-    val placeFreqProduct = training.map(extractRelevantFields).flatMapValues(text => text.split(" ").distinct) // get all words for all places
+    val placeFreqProduct = training.map(extractPlaceAndTweettext).flatMapValues(text => text.split(" ").distinct) // get all words for all places
       .map({ case (place, word) => (word, place) }).join(inputWordsDistinctKVP) // remove words that are not in the input
       .map({ case (word, (place, inputOccurrences)) => ((place, word, inputOccurrences), 1) }).reduceByKey(_ + _) // count the number of tweets each word occur in
       .map({ case ((place, word, inputOccurrences), freq) => ((place, word), Math.pow(freq, inputOccurrences)) })
@@ -88,6 +87,7 @@ object classify {
     val tweetCountByPlace = training.map(line => (line.split("\t")(4), 1))
       .join(placeFreqProduct).mapValues(_._1) // remove places that doesn't have all the words
       .reduceByKey(_ + _)
+
 
     def getMaxProb(a: (String, Double), b: (String, Double)): (String, Double) = {
       if (a._2 > b._2) {
@@ -110,7 +110,6 @@ object classify {
       resultString = res._1 + "\t" + res._2
     }
 
-    println(resultString)
     Files.write(Paths.get(outputPath), resultString.getBytes(StandardCharsets.UTF_8))
   }
 }
